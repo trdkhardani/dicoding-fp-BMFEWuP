@@ -6,13 +6,8 @@
  */
 
 // TODO [Basic] Buat variabel array untuk menyimpan semua data transaksi, contoh: let transactions = []
-let transactions = [];
 
 // TODO [Basic] Buat fungsi untuk menghasilkan ID unik secara otomatis, contoh: gunakan +new Date()
-function generateId() {
-  return +new Date();
-}
-
 
 /**
  * ========================================================
@@ -20,8 +15,6 @@ function generateId() {
  * ========================================================
  */
 // TODO [Basic] Ambil elemen kontainer incomeList dan expenseList dari DOM
-const incomeList = document.querySelector('#incomeList');
-const expenseList = document.querySelector('#expenseList');
 
 /**
  * TODO [Basic]:
@@ -31,8 +24,6 @@ const expenseList = document.querySelector('#expenseList');
  *  - Pastikan setiap elemen memiliki atribut data-testid yang sesuai (lihat panduan di rubrik)
  *  - Masukkan kartu ke kontainer yang tepat: income → incomeList, expense → expenseList
  */
-
-function renderTransactions() {}
 
 // TODO [Basic] Tambahkan event listener 'submit' pada form, panggil e.preventDefault() di dalamnya
 // TODO [Basic] Di dalam handler submit, ambil nilai input lalu tambahkan sebagai objek transaksi baru ke array
@@ -50,7 +41,6 @@ function renderTransactions() {}
  *  - Hitung total pemasukan, total pengeluaran, dan saldo (pemasukan - pengeluaran)
  *  - Tampilkan hasilnya ke elemen yang sesuai di HTML
  */
-
 
 /**
  * ========================================================
@@ -77,7 +67,6 @@ function renderTransactions() {}
  *  - Pasang satu listener untuk event tersebut yang memanggil fungsi render dan update dasbor
  */
 
-
 /**
  * ========================================================
  * Kriteria 3: Fitur Interaktif (Pindah Kategori dan Pencarian)
@@ -102,3 +91,185 @@ function renderTransactions() {}
  * Pastikan fitur pencarian berjalan dengan baik di semua kondisi:
  *  - Saat kolom pencarian dikosongkan, tampilkan kembali seluruh daftar transaksi
  */
+
+/**
+ * @readonly
+ * @enum {string}
+ */
+const TrxType = {
+  INCOME: "income",
+  EXPENSE: "expense",
+};
+
+/**
+ * @typedef {Object} Transaction
+ * @property {string} id
+ * @property {string} title
+ * @property {number} amount
+ * @property {Date} date
+ * @property {TrxType} type
+ */
+
+/** @type {Transaction[]} */
+let transactions = [];
+
+// DUMMY TRANSACTIONS DATA (DELSOON)
+transactions.push(
+  {
+    id: generateId(),
+    title: "dummy-inc-1",
+    amount: 20000,
+    date: new Date(),
+    type: TrxType.INCOME,
+  },
+  {
+    title: "dummy-inc-2",
+    amount: 20000,
+    date: new Date(),
+    type: TrxType.INCOME,
+    id: generateId(),
+  },
+  {
+    title: "dummy-exp-1",
+    amount: 5000,
+    date: new Date(),
+    type: TrxType.EXPENSE,
+    id: generateId(),
+  },
+  {
+    title: "dummy-exp-2",
+    amount: 5000,
+    date: new Date(),
+    type: TrxType.EXPENSE,
+    id: generateId(),
+  },
+);
+console.log(transactions);
+
+function generateId() {
+  return +new Date();
+}
+
+const incomeList = document.querySelector("#incomeList");
+const expenseList = document.querySelector("#expenseList");
+
+/**
+ * @param {Element} trxTypeElementId
+ * @param {Transaction[]} transactions
+ */
+const setTransactionsDisplay = (trxTypeElementId, transactions, amountColor) => {
+  for (const trx of transactions) {
+    const trxItemContainer = document.createElement('div');
+    trxItemContainer.id = `transaction-${trx.id}`;
+    trxItemContainer.classList.add('tracker-transaction-item')
+
+    const trxTitle = document.createElement("h2");
+    trxTitle.innerText = trx.title;
+    trxItemContainer.appendChild(trxTitle);
+
+    const trxAmount = document.createElement("p");
+    trxAmount.style.color = amountColor;
+    trxAmount.innerText = trx.amount;
+    trxItemContainer.appendChild(trxAmount);
+
+    const trxDate = document.createElement("p");
+    trxDate.innerText = `${trx.date.getDate()}/${trx.date.getMonth()}/${trx.date.getFullYear()}`;
+    trxItemContainer.appendChild(trxDate);
+
+    const trxType = document.createElement("p");
+    trxType.innerText = trx.type;
+    trxItemContainer.appendChild(trxType);
+
+    trxTypeElementId.appendChild(trxItemContainer);
+  }
+
+  return;
+}
+
+/**
+ * @param {Element} trxTypeElementId
+ * @param {Transaction[]} transactions
+ */
+function calculateTotal(transactions) {
+  let total = 0;
+
+  for (const trx of transactions) {
+    total += Number(trx.amount)
+  }
+
+  return Number(total);
+}
+
+function displayTotal() {
+  const income = transactions.filter((trx) => trx.type === TrxType.INCOME);
+  const expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
+
+  const incomeTotal = calculateTotal(income);
+  const expensesTotal = calculateTotal(expenses);
+  const currentBalance = incomeTotal - expensesTotal;
+
+  const incomeTotalElement = document.querySelector('.tracker-summary__stat-amount--income');
+  const expenseTotalElement = document.querySelector('.tracker-summary__stat-amount--expense');
+  const currentBalanceElement = document.querySelector('.tracker-summary__balance-amount');
+
+  incomeTotalElement.innerText = `Rp${incomeTotal}`;
+  expenseTotalElement.innerText = `Rp${expensesTotal}`;
+  currentBalanceElement.innerText = `Rp${currentBalance}`;
+}
+
+function displayTransactions() {
+  incomeList.innerHTML = "";
+  expenseList.innerHTML = "";
+
+  const element = document.documentElement;
+
+  const colorIncome = getComputedStyle(element).getPropertyValue('--color-income')
+  const colorExpense = getComputedStyle(element).getPropertyValue('--color-expense')
+
+  const incomes = transactions.filter((trx) => trx.type === TrxType.INCOME);
+  const expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
+
+  setTransactionsDisplay(incomeList, incomes, colorIncome);
+  setTransactionsDisplay(expenseList, expenses, colorExpense);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  displayTransactions();
+  displayTotal();
+
+  const trxForm = document.getElementById('transactionForm');
+  trxForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    addTransaction();
+  })
+})
+
+function addTransaction() {
+  const input = {
+    title: document.getElementById('transactionFormTitleInput').value,
+    amount: document.getElementById('transactionFormAmountInput').value,
+    date: new Date(document.getElementById('transactionFormDateInput').value),
+    type: document.getElementById('transactionFormTypeSelect').value,
+  }
+
+  // validation
+  if (input.title === '' || !input.title)
+    return alert('Keterangan tidak boleh kosong');
+
+  if (Number(input.amount) < 0)
+    return alert('Nominal tidak boleh negatif');
+
+  // if (input.date == {})
+  //   return alert('Tanggal tidak boleh kosong');
+
+  transactions.push({
+    id: generateId(),
+    title: input.title,
+    amount: input.amount,
+    date: input.date,
+    type: input.type
+  });
+
+  displayTransactions();
+  displayTotal();
+}
