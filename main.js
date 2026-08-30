@@ -119,32 +119,42 @@ transactions.push(
     id: generateId(),
     title: "dummy-inc-1",
     amount: 20000,
-    date: new Date(),
+    date: new Date().toISOString(),
     type: TrxType.INCOME,
   },
   {
     title: "dummy-inc-2",
     amount: 20000,
-    date: new Date(),
+    date: new Date().toISOString(),
     type: TrxType.INCOME,
     id: generateId(),
   },
   {
     title: "dummy-exp-1",
     amount: 5000,
-    date: new Date(),
+    date: new Date().toISOString(),
     type: TrxType.EXPENSE,
     id: generateId(),
   },
   {
     title: "dummy-exp-2",
     amount: 5000,
-    date: new Date(),
+    date: new Date().toISOString(),
     type: TrxType.EXPENSE,
     id: generateId(),
   },
 );
-console.log(transactions);
+
+const transactionsDataKey = 'TRANSACTIONS_DATA';
+
+function checkStorage() {
+  return typeof (Storage) !== 'undefined';
+}
+
+if (!localStorage.getItem(transactionsDataKey)) {
+  localStorage.setItem(transactionsDataKey, JSON.stringify(transactions));
+}
+console.log(JSON.parse(localStorage.getItem(transactionsDataKey)) || []);
 
 function generateId() {
   return +new Date();
@@ -173,7 +183,7 @@ const setTransactionsDisplay = (trxTypeElementId, transactions, amountColor) => 
     trxItemContainer.appendChild(trxAmount);
 
     const trxDate = document.createElement("p");
-    trxDate.innerText = `${trx.date.getDate()}/${trx.date.getMonth()}/${trx.date.getFullYear()}`;
+    trxDate.innerText = trx.date;
     trxItemContainer.appendChild(trxDate);
 
     const trxType = document.createElement("p");
@@ -201,20 +211,27 @@ function calculateTotal(transactions) {
 }
 
 function displayTotal() {
-  const income = transactions.filter((trx) => trx.type === TrxType.INCOME);
-  const expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
+  if (checkStorage()) {
+    /**@type {Transaction[]} */
+    const transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
 
-  const incomeTotal = calculateTotal(income);
-  const expensesTotal = calculateTotal(expenses);
-  const currentBalance = incomeTotal - expensesTotal;
+    const income = transactions.filter((trx) => trx.type === TrxType.INCOME);
+    const expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
 
-  const incomeTotalElement = document.querySelector('.tracker-summary__stat-amount--income');
-  const expenseTotalElement = document.querySelector('.tracker-summary__stat-amount--expense');
-  const currentBalanceElement = document.querySelector('.tracker-summary__balance-amount');
+    const incomeTotal = calculateTotal(income);
+    const expensesTotal = calculateTotal(expenses);
+    const currentBalance = incomeTotal - expensesTotal;
 
-  incomeTotalElement.innerText = `Rp${incomeTotal}`;
-  expenseTotalElement.innerText = `Rp${expensesTotal}`;
-  currentBalanceElement.innerText = `Rp${currentBalance}`;
+    const incomeTotalElement = document.querySelector('.tracker-summary__stat-amount--income');
+    const expenseTotalElement = document.querySelector('.tracker-summary__stat-amount--expense');
+    const currentBalanceElement = document.querySelector('.tracker-summary__balance-amount');
+
+    incomeTotalElement.innerText = `Rp${incomeTotal}`;
+    expenseTotalElement.innerText = `Rp${expensesTotal}`;
+    currentBalanceElement.innerText = `Rp${currentBalance}`;
+  } else {
+    return alert('Browser tidak support web storage');
+  }
 }
 
 function displayTransactions() {
@@ -226,11 +243,18 @@ function displayTransactions() {
   const colorIncome = getComputedStyle(element).getPropertyValue('--color-income')
   const colorExpense = getComputedStyle(element).getPropertyValue('--color-expense')
 
-  const incomes = transactions.filter((trx) => trx.type === TrxType.INCOME);
-  const expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
+  if (checkStorage()) {
+    /**@type {Transaction[]} */
+    const transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
 
-  setTransactionsDisplay(incomeList, incomes, colorIncome);
-  setTransactionsDisplay(expenseList, expenses, colorExpense);
+    const incomes = transactions.filter((trx) => trx.type === TrxType.INCOME);
+    const expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
+
+    setTransactionsDisplay(incomeList, incomes, colorIncome);
+    setTransactionsDisplay(expenseList, expenses, colorExpense);
+  } else {
+    return alert('Browser tidak support web storage');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -248,7 +272,7 @@ function addTransaction() {
   const input = {
     title: document.getElementById('transactionFormTitleInput').value,
     amount: document.getElementById('transactionFormAmountInput').value,
-    date: new Date(document.getElementById('transactionFormDateInput').value),
+    date: document.getElementById('transactionFormDateInput').value,
     type: document.getElementById('transactionFormTypeSelect').value,
   }
 
@@ -269,6 +293,9 @@ function addTransaction() {
     date: input.date,
     type: input.type
   });
+
+  // save transactions data with newly added one
+  localStorage.setItem(transactionsDataKey, JSON.stringify(transactions));
 
   displayTransactions();
   displayTotal();
