@@ -119,27 +119,27 @@ transactions.push(
     id: generateId(),
     title: "dummy-inc-1",
     amount: 20000,
-    date: new Date().toISOString(),
+    date: '2026-08-31',
     type: TrxType.INCOME,
   },
   {
     title: "dummy-inc-2",
     amount: 20000,
-    date: new Date().toISOString(),
+    date: '2026-08-31',
     type: TrxType.INCOME,
     id: generateId(),
   },
   {
     title: "dummy-exp-1",
     amount: 5000,
-    date: new Date().toISOString(),
+    date: '2026-08-31',
     type: TrxType.EXPENSE,
     id: generateId(),
   },
   {
     title: "dummy-exp-2",
     amount: 5000,
-    date: new Date().toISOString(),
+    date: '2026-08-31',
     type: TrxType.EXPENSE,
     id: generateId(),
   },
@@ -189,6 +189,19 @@ const setTransactionsDisplay = (trxTypeElementId, transactions, amountColor) => 
     const trxType = document.createElement("p");
     trxType.innerText = trx.type;
     trxItemContainer.appendChild(trxType);
+
+    const deleteButton = document.createElement('button');
+    deleteButton.classList.add('delete-transaction-btn');
+    deleteButton.innerText = 'Delete';
+    deleteButton.addEventListener('click', () => {
+      deleteTransaction(trx.id);
+    });
+    trxItemContainer.appendChild(deleteButton);
+
+    const editButton = document.createElement('button');
+    editButton.classList.add('edit-transaction-btn');
+    editButton.innerText = 'Edit';
+    trxItemContainer.appendChild(editButton);
 
     trxTypeElementId.appendChild(trxItemContainer);
   }
@@ -268,6 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
   })
 })
 
+function saveChangesToStorage(transactions) {
+  localStorage.setItem(transactionsDataKey, JSON.stringify(transactions));
+}
+
 function addTransaction() {
   const input = {
     title: document.getElementById('transactionFormTitleInput').value,
@@ -296,6 +313,20 @@ function addTransaction() {
 
   // save transactions data with newly added one
   localStorage.setItem(transactionsDataKey, JSON.stringify(transactions));
+
+  displayTransactions();
+  displayTotal();
+}
+
+function deleteTransaction(trxId) {
+  /**@type {Transaction[]} */
+  const transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
+
+  const trxIndex = transactions.findIndex((trx) => trx.id === trxId);
+
+  transactions.splice(trxIndex, 1);
+
+  saveChangesToStorage(transactions);
 
   displayTransactions();
   displayTotal();
