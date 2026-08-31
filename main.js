@@ -280,18 +280,22 @@ function displayTotal() {
   }
 }
 
-function displayTransactions() {
+function displayTransactions(searchTitle = '') {
   const element = document.documentElement;
 
   const colorIncome = getComputedStyle(element).getPropertyValue('--color-income')
   const colorExpense = getComputedStyle(element).getPropertyValue('--color-expense')
 
   if (checkStorage()) {
-    /**@type {Transaction[]} */
-    const transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
+    transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
 
-    const incomes = transactions.filter((trx) => trx.type === TrxType.INCOME);
-    const expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
+    let incomes = transactions.filter((trx) => trx.type === TrxType.INCOME);
+    let expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
+
+    if (searchTitle.length > 0) {
+      incomes = incomes.filter((incomeTrx) => incomeTrx.title.toUpperCase().includes(searchTitle.toUpperCase()));
+      expenses = expenses.filter((expenseTrx) => expenseTrx.title.toUpperCase().includes(searchTitle.toUpperCase()));
+    }
 
     setTransactionsDisplay(incomeList, incomes, colorIncome);
     setTransactionsDisplay(expenseList, expenses, colorExpense);
@@ -321,6 +325,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ev.preventDefault();
     addTransaction();
   });
+
+  const searchTransactionFormTitleInput = document.getElementById('searchTransactionFormTitleInput');
+  searchTransactionFormTitleInput.addEventListener('input', () => {
+    incomeList.innerHTML = "";
+    expenseList.innerHTML = "";
+
+    searchTransactions();
+  })
 })
 
 function saveChangesToStorage(transactions) {
@@ -459,4 +471,9 @@ function changeTrxType(trxId) {
   saveChangesToStorage(transactions);
 
   document.dispatchEvent(new Event(RENDER_EVENT));
+}
+
+function searchTransactions() {
+  const searchInput = document.getElementById('searchTransactionFormTitleInput').value;
+  displayTransactions(searchInput);
 }
