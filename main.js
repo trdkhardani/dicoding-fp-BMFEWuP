@@ -229,6 +229,13 @@ const setTransactionsDisplay = (trxTypeElementId, transactions, amountColor) => 
     });
     trxItemContainer.appendChild(editButton);
 
+    const switchTypeButton = document.createElement('button');
+    switchTypeButton.innerText = 'Ubah Tipe';
+    switchTypeButton.addEventListener('click', () => {
+      changeTrxType(trx.id);
+    });
+    trxItemContainer.appendChild(switchTypeButton);
+
     trxTypeElementId.appendChild(trxItemContainer);
   }
 
@@ -435,6 +442,21 @@ function updateTransaction() {
 
   localStorage.removeItem(editModeKey);
   localStorage.removeItem(editTrxIdKey);
+
+  document.dispatchEvent(new Event(RENDER_EVENT));
+}
+
+function changeTrxType(trxId) {
+  console.log('well hello from ubah tipe');
+  transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
+  console.log(transactions);
+  const trx = transactions.find((trx) => trx.id === trxId);
+  console.log(trx);
+  console.log(trx.type === TrxType.EXPENSE);
+  // trx.title = 'we macam mana pula kau ini';
+  trx.type === TrxType.EXPENSE ? trx.type = TrxType.INCOME : trx.type = TrxType.EXPENSE;
+
+  saveChangesToStorage(transactions);
 
   document.dispatchEvent(new Event(RENDER_EVENT));
 }
