@@ -116,36 +116,40 @@ let transactions = [];
 // DUMMY TRANSACTIONS DATA (DELSOON)
 transactions.push(
   {
-    id: generateId(),
+    id: `${generateId()}__1`,
     title: "dummy-inc-1",
     amount: 20000,
     date: '2026-08-31',
     type: TrxType.INCOME,
   },
   {
+    id: `${generateId()}__2`,
     title: "dummy-inc-2",
     amount: 20000,
     date: '2026-08-31',
     type: TrxType.INCOME,
-    id: generateId(),
   },
   {
+    id: `${generateId()}__3`,
     title: "dummy-exp-1",
     amount: 5000,
     date: '2026-08-31',
     type: TrxType.EXPENSE,
-    id: generateId(),
   },
   {
+    id: `${generateId()}__4`,
     title: "dummy-exp-2",
     amount: 5000,
     date: '2026-08-31',
     type: TrxType.EXPENSE,
-    id: generateId(),
   },
 );
 
 const transactionsDataKey = 'TRANSACTIONS_DATA';
+const editModeKey = 'EDIT_MODE';
+const editTrxIdKey = 'EDIT_TRX_ID';
+const RENDER_EVENT = 'render-transactions';
+const EDIT_MODE_EVENT = 'edit-transaction';
 
 function checkStorage() {
   return typeof (Storage) !== 'undefined';
@@ -162,6 +166,25 @@ function generateId() {
 
 const incomeList = document.querySelector("#incomeList");
 const expenseList = document.querySelector("#expenseList");
+
+const clearForm = () => {
+  document.getElementById('transactionFormTitleInput').value = '';
+  document.getElementById('transactionFormAmountInput').value = '';
+  document.getElementById('transactionFormDateInput').value = '';
+  document.getElementById('transactionFormTypeSelect').value = 'income';
+}
+
+document.addEventListener(RENDER_EVENT, () => {
+  incomeList.innerHTML = "";
+  expenseList.innerHTML = "";
+  clearForm();
+  displayTransactions();
+  displayTotal();
+});
+
+document.addEventListener(EDIT_MODE_EVENT, () => {
+  localStorage.setItem(editModeKey, true);
+});
 
 /**
  * @param {Element} trxTypeElementId
@@ -201,6 +224,9 @@ const setTransactionsDisplay = (trxTypeElementId, transactions, amountColor) => 
     const editButton = document.createElement('button');
     editButton.classList.add('edit-transaction-btn');
     editButton.innerText = 'Edit';
+    editButton.addEventListener('click', () => {
+      changeFormForTransaction(trx.id);
+    });
     trxItemContainer.appendChild(editButton);
 
     trxTypeElementId.appendChild(trxItemContainer);
@@ -248,9 +274,6 @@ function displayTotal() {
 }
 
 function displayTransactions() {
-  incomeList.innerHTML = "";
-  expenseList.innerHTML = "";
-
   const element = document.documentElement;
 
   const colorIncome = getComputedStyle(element).getPropertyValue('--color-income')
@@ -271,14 +294,26 @@ function displayTransactions() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  displayTransactions();
-  displayTotal();
+  document.dispatchEvent(new Event(RENDER_EVENT));
 
-  const trxForm = document.getElementById('transactionForm');
-  trxForm.addEventListener('submit', (ev) => {
+  const addTrxForm = document.getElementById('transactionForm');
+  const editTrxForm = document.getElementById('transactionForm');
+  console.log(localStorage.getItem(editModeKey));
+  console.log(localStorage.getItem(editModeKey) == 'true');
+
+  editTrxForm.addEventListener('submit', (ev) => {
+    console.log('update bwangg');
+    ev.preventDefault();
+    updateTransaction();
+  });
+  // if (localStorage.getItem(editModeKey) == 'true') {
+  // } else {
+  // }
+  addTrxForm.addEventListener('submit', (ev) => {
+    console.log('add bwangg');
     ev.preventDefault();
     addTransaction();
-  })
+  });
 })
 
 function saveChangesToStorage(transactions) {
@@ -303,6 +338,7 @@ function addTransaction() {
   // if (input.date == {})
   //   return alert('Tanggal tidak boleh kosong');
 
+  transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
   transactions.push({
     id: generateId(),
     title: input.title,
@@ -314,8 +350,7 @@ function addTransaction() {
   // save transactions data with newly added one
   localStorage.setItem(transactionsDataKey, JSON.stringify(transactions));
 
-  displayTransactions();
-  displayTotal();
+  document.dispatchEvent(new Event(RENDER_EVENT));
 }
 
 function deleteTransaction(trxId) {
@@ -328,6 +363,78 @@ function deleteTransaction(trxId) {
 
   saveChangesToStorage(transactions);
 
-  displayTransactions();
-  displayTotal();
+  document.dispatchEvent(new Event(RENDER_EVENT));
+}
+
+function changeFormForTransaction(trxId) {
+  localStorage.setItem(editModeKey, true);
+  // document.dispatchEvent(new Event(EDIT_MODE_EVENT));
+
+  /**@type {Transaction[]} */
+  const transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
+
+  const trx = transactions.find((trx) => trx.id === trxId);
+
+  const formHeading = document.getElementById('form-heading');
+  formHeading.innerText = 'Ubah Pencatatan';
+
+  // fill id to local storage
+  localStorage.setItem(editTrxIdKey, trx.id);
+
+  // prepopulate
+  document.getElementById('transactionFormTitleInput').value = trx.title;
+  document.getElementById('transactionFormAmountInput').value = trx.amount;
+  document.getElementById('transactionFormDateInput').value = trx.date;
+  document.getElementById('transactionFormTypeSelect').value = trx.type;
+}
+
+function updateTransaction() {
+  const input = {
+    title: document.getElementById('transactionFormTitleInput').value,
+    amount: document.getElementById('transactionFormAmountInput').value,
+    date: document.getElementById('transactionFormDateInput').value,
+    type: document.getElementById('transactionFormTypeSelect').value,
+  }
+
+  // validation
+  if (input.title === '' || !input.title)
+    return alert('Keterangan tidak boleh kosong');
+
+  if (Number(input.amount) < 0)
+    return alert('Nominal tidak boleh negatif');
+
+  // if (input.date == {})
+  //   return alert('Tanggal tidak boleh kosong');
+
+  /**@type {Transaction[]} */
+  const transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
+  console.log(transactions);
+
+  const trx = transactions.find((trx) => trx.id == localStorage.getItem(editTrxIdKey));
+  console.log('editTrxIdKey');
+  console.log(localStorage.getItem(editTrxIdKey));
+  console.log(trx);
+
+  trx.title = input.title;
+  trx.amount = input.amount;
+  trx.date = input.date;
+  trx.type = input.type;
+  // transactions.splice(trxIndex, 1, {
+  //   id:
+  //   title: input.title,
+  //   amount: input.amount,
+  //   date: input.date,
+  //   type: input.type,
+  // });
+
+  // change existing transaction data with newly edited one
+  localStorage.setItem(transactionsDataKey, JSON.stringify(transactions));
+
+  const formHeading = document.getElementById('form-heading');
+  formHeading.innerText = 'Tambah Pencatatan Baru';
+
+  localStorage.removeItem(editModeKey);
+  localStorage.removeItem(editTrxIdKey);
+
+  document.dispatchEvent(new Event(RENDER_EVENT));
 }
