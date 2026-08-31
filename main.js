@@ -307,30 +307,20 @@ function displayTransactions(searchTitle = '') {
 document.addEventListener('DOMContentLoaded', () => {
   document.dispatchEvent(new Event(RENDER_EVENT));
 
-  const addTrxForm = document.getElementById('transactionForm');
-  const editTrxForm = document.getElementById('transactionForm');
+  const transactionForm = document.getElementById('transactionForm');
   console.log(localStorage.getItem(editModeKey));
   console.log(localStorage.getItem(editModeKey) == 'true');
 
-  editTrxForm.addEventListener('submit', (ev) => {
-    console.log('update bwangg');
-    ev.preventDefault();
-    updateTransaction();
-  });
-  // if (localStorage.getItem(editModeKey) == 'true') {
-  // } else {
-  // }
-  addTrxForm.addEventListener('submit', (ev) => {
+  transactionForm.addEventListener('submit', (ev) => {
     console.log('add bwangg');
     ev.preventDefault();
-    addTransaction();
+    localStorage.getItem(editModeKey) == 'true' ? updateTransaction() : addTransaction();
   });
 
   const searchTransactionFormTitleInput = document.getElementById('searchTransactionFormTitleInput');
   searchTransactionFormTitleInput.addEventListener('input', () => {
     incomeList.innerHTML = "";
     expenseList.innerHTML = "";
-
     searchTransactions();
   })
 })
