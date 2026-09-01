@@ -148,8 +148,14 @@ transactions.push(
 const transactionsDataKey = 'TRANSACTIONS_DATA';
 const editModeKey = 'EDIT_MODE';
 const editTrxIdKey = 'EDIT_TRX_ID';
-const RENDER_EVENT = 'render-transactions';
-const EDIT_MODE_EVENT = 'edit-transaction';
+const TRANSACTION_UPDATED_EVENT = 'transaction:updated';
+
+function rupiahFormatter(amount) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+  }).format(amount);
+}
 
 function checkStorage() {
   return typeof (Storage) !== 'undefined';
@@ -174,7 +180,7 @@ const clearForm = () => {
   document.getElementById('transactionFormTypeSelect').value = 'income';
 }
 
-document.addEventListener(RENDER_EVENT, () => {
+document.addEventListener(TRANSACTION_UPDATED_EVENT, () => {
   incomeList.innerHTML = "";
   expenseList.innerHTML = "";
   clearForm();
@@ -182,59 +188,94 @@ document.addEventListener(RENDER_EVENT, () => {
   displayTotal();
 });
 
-document.addEventListener(EDIT_MODE_EVENT, () => {
-  localStorage.setItem(editModeKey, true);
-});
-
 /**
  * @param {Element} trxTypeElementId
  * @param {Transaction[]} transactions
  */
-const setTransactionsDisplay = (trxTypeElementId, transactions, amountColor) => {
+const setTransactionsDisplay = (trxTypeElementId, transactions) => {
   for (const trx of transactions) {
     const trxItemContainer = document.createElement('div');
-    trxItemContainer.id = `transaction-${trx.id}`;
+    trxItemContainer.setAttribute('data-transactionid', trx.id);
+    trxItemContainer.setAttribute('data-testid', 'transactionItem');
     trxItemContainer.classList.add('tracker-transaction-item')
 
-    const trxTitle = document.createElement("h2");
-    trxTitle.innerText = trx.title;
-    trxItemContainer.appendChild(trxTitle);
+    // expense/income icon
+    const trxTypeIcon = document.createElement("p");
+    trxTypeIcon.classList.add('tracker-transaction-item__icon');
+    trxTypeIcon.classList.add(`tracker-transaction-item__icon--${trxTypeElementId === incomeList ? 'income' : 'expense'}`);
+    trxTypeIcon.innerText = trx.type === TrxType.INCOME ? '+' : '-';
+    trxItemContainer.appendChild(trxTypeIcon);
 
-    const trxAmount = document.createElement("p");
-    trxAmount.style.color = amountColor;
-    trxAmount.innerText = trx.amount;
-    trxItemContainer.appendChild(trxAmount);
+    // detail wrapper (title and date)
+    const detailWrapper = document.createElement('div');
+    detailWrapper.classList.add('tracker-transaction-item__detail');
+    trxItemContainer.appendChild(detailWrapper);
+
+    const trxTitle = document.createElement("h4");
+    trxTitle.classList.add('tracker-transaction-item__title');
+    trxTitle.setAttribute('data-testid', 'transactionItemTitle');
+    trxTitle.innerText = trx.title;
+    detailWrapper.appendChild(trxTitle);
 
     const trxDate = document.createElement("p");
+    trxDate.classList.add('tracker-transaction-item__date');
+    trxDate.setAttribute('data-testid', 'transactionItemDate');
     trxDate.innerText = trx.date;
-    trxItemContainer.appendChild(trxDate);
+    detailWrapper.appendChild(trxDate);
 
-    const trxType = document.createElement("p");
-    trxType.innerText = trx.type;
-    trxItemContainer.appendChild(trxType);
+    // transaction type (hidden)
+    const trxTypeIdentifier = document.createElement('p');
+    trxTypeIdentifier.setAttribute('data-testid', 'transactionItemType');
+    trxTypeIdentifier.innerText = trx.type === TrxType.INCOME ? 'Pemasukan' : 'Pengeluaran';
+    trxTypeIdentifier.style.display = 'none';
+    detailWrapper.appendChild(trxTypeIdentifier);
 
-    const deleteButton = document.createElement('button');
-    deleteButton.classList.add('delete-transaction-btn');
-    deleteButton.innerText = 'Delete';
-    deleteButton.addEventListener('click', () => {
-      deleteTransaction(trx.id);
-    });
-    trxItemContainer.appendChild(deleteButton);
+    // right side wrapper (amount and actions)
+    const rightSide = document.createElement('div');
+    rightSide.classList.add('tracker-transaction-item__right');
+    trxItemContainer.appendChild(rightSide)
 
-    const editButton = document.createElement('button');
-    editButton.classList.add('edit-transaction-btn');
-    editButton.innerText = 'Edit';
-    editButton.addEventListener('click', () => {
-      changeFormForTransaction(trx.id);
-    });
-    trxItemContainer.appendChild(editButton);
+    const trxAmount = document.createElement("p");
+    trxAmount.classList.add('tracker-transaction-item__amount');
+    trxAmount.classList.add(`tracker-transaction-item__amount--${trxTypeElementId === incomeList ? 'income' : 'expense'}`);
+    trxAmount.setAttribute('data-testid', 'transactionItemAmount');
+    trxAmount.innerText = rupiahFormatter(trx.amount);
+    // trxItemContainer.appendChild(trxAmount);
+    rightSide.appendChild(trxAmount);
+
+    // wrapper for buttons
+    const actionsWrapper = document.createElement('div');
+    actionsWrapper.classList.add('tracker-transaction-item__actions');
+    rightSide.appendChild(actionsWrapper);
+    // trxItemContainer.appendChild(actionsWrapper);
 
     const switchTypeButton = document.createElement('button');
+    switchTypeButton.classList.add('tracker-transaction-item__btn');
+    switchTypeButton.setAttribute('data-testid', 'transactionItemEditTypeButton');
     switchTypeButton.innerText = 'Ubah Tipe';
     switchTypeButton.addEventListener('click', () => {
       changeTrxType(trx.id);
     });
-    trxItemContainer.appendChild(switchTypeButton);
+    actionsWrapper.appendChild(switchTypeButton);
+
+    const editButton = document.createElement('button');
+    editButton.classList.add('tracker-transaction-item__btn');
+    editButton.setAttribute('data-testid', 'transactionItemEditButton');
+    editButton.innerText = 'Edit';
+    editButton.addEventListener('click', () => {
+      window.location.replace(`${window.location.origin}/#form-heading`)
+      changeFormForUpdate(trx.id);
+    });
+    actionsWrapper.appendChild(editButton);
+
+    const deleteButton = document.createElement('button');
+    deleteButton.classList.add('tracker-transaction-item__btn');
+    deleteButton.setAttribute('data-testid', 'transactionItemDeleteButton');
+    deleteButton.innerText = 'Delete';
+    deleteButton.addEventListener('click', () => {
+      deleteTransaction(trx.id);
+    });
+    actionsWrapper.appendChild(deleteButton);
 
     trxTypeElementId.appendChild(trxItemContainer);
   }
@@ -272,20 +313,15 @@ function displayTotal() {
     const expenseTotalElement = document.querySelector('.tracker-summary__stat-amount--expense');
     const currentBalanceElement = document.querySelector('.tracker-summary__balance-amount');
 
-    incomeTotalElement.innerText = `Rp${incomeTotal}`;
-    expenseTotalElement.innerText = `Rp${expensesTotal}`;
-    currentBalanceElement.innerText = `Rp${currentBalance}`;
+    incomeTotalElement.innerText = rupiahFormatter(incomeTotal);
+    expenseTotalElement.innerText = rupiahFormatter(expensesTotal);
+    currentBalanceElement.innerText = rupiahFormatter(currentBalance);
   } else {
     return alert('Browser tidak support web storage');
   }
 }
 
 function displayTransactions(searchTitle = '') {
-  const element = document.documentElement;
-
-  const colorIncome = getComputedStyle(element).getPropertyValue('--color-income')
-  const colorExpense = getComputedStyle(element).getPropertyValue('--color-expense')
-
   if (checkStorage()) {
     transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
 
@@ -293,19 +329,19 @@ function displayTransactions(searchTitle = '') {
     let expenses = transactions.filter((trx) => trx.type === TrxType.EXPENSE);
 
     if (searchTitle.length > 0) {
-      incomes = incomes.filter((incomeTrx) => incomeTrx.title.toUpperCase().includes(searchTitle.toUpperCase()));
-      expenses = expenses.filter((expenseTrx) => expenseTrx.title.toUpperCase().includes(searchTitle.toUpperCase()));
+      incomes = incomes.filter((incomeTrx) => incomeTrx.title.trim().toLowerCase().includes(searchTitle.trim().toLowerCase()));
+      expenses = expenses.filter((expenseTrx) => expenseTrx.title.trim().toLowerCase().includes(searchTitle.trim().toLowerCase()));
     }
 
-    setTransactionsDisplay(incomeList, incomes, colorIncome);
-    setTransactionsDisplay(expenseList, expenses, colorExpense);
+    setTransactionsDisplay(incomeList, incomes);
+    setTransactionsDisplay(expenseList, expenses);
   } else {
     return alert('Browser tidak support web storage');
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.dispatchEvent(new Event(RENDER_EVENT));
+  document.dispatchEvent(new Event(TRANSACTION_UPDATED_EVENT));
 
   const transactionForm = document.getElementById('transactionForm');
   console.log(localStorage.getItem(editModeKey));
@@ -359,7 +395,7 @@ function addTransaction() {
   // save transactions data with newly added one
   localStorage.setItem(transactionsDataKey, JSON.stringify(transactions));
 
-  document.dispatchEvent(new Event(RENDER_EVENT));
+  document.dispatchEvent(new Event(TRANSACTION_UPDATED_EVENT));
 }
 
 function deleteTransaction(trxId) {
@@ -372,20 +408,22 @@ function deleteTransaction(trxId) {
 
   saveChangesToStorage(transactions);
 
-  document.dispatchEvent(new Event(RENDER_EVENT));
+  document.dispatchEvent(new Event(TRANSACTION_UPDATED_EVENT));
 }
 
-function changeFormForTransaction(trxId) {
+function changeFormForUpdate(trxId) {
   localStorage.setItem(editModeKey, true);
-  // document.dispatchEvent(new Event(EDIT_MODE_EVENT));
 
-  /**@type {Transaction[]} */
-  const transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
+  transactions = JSON.parse(localStorage.getItem(transactionsDataKey));
 
   const trx = transactions.find((trx) => trx.id === trxId);
 
+  // update form heading and submit btn texts
   const formHeading = document.getElementById('form-heading');
   formHeading.innerText = 'Ubah Pencatatan';
+
+  const submitButton = document.querySelector('.tracker-form__submit');
+  submitButton.innerText = 'Perbarui';
 
   // fill id to local storage
   localStorage.setItem(editTrxIdKey, trx.id);
@@ -445,7 +483,7 @@ function updateTransaction() {
   localStorage.removeItem(editModeKey);
   localStorage.removeItem(editTrxIdKey);
 
-  document.dispatchEvent(new Event(RENDER_EVENT));
+  document.dispatchEvent(new Event(TRANSACTION_UPDATED_EVENT));
 }
 
 function changeTrxType(trxId) {
@@ -460,7 +498,7 @@ function changeTrxType(trxId) {
 
   saveChangesToStorage(transactions);
 
-  document.dispatchEvent(new Event(RENDER_EVENT));
+  document.dispatchEvent(new Event(TRANSACTION_UPDATED_EVENT));
 }
 
 function searchTransactions() {
