@@ -229,9 +229,11 @@ body {
 }
 
 .tracker-form__submit {
-  background: var(--text-dark);
-  color: #fff;
-  border: none;
+  /* background: var(--text-dark); */
+  background: transparent;
+  border: 1px solid var(--text-dark);
+  color: var(--text-dark);
+  /* border: none; */
   padding: 0.85rem 1.5rem;
   height: 44px;
   border-radius: 12px;
@@ -239,10 +241,17 @@ body {
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: transform 0.1s, opacity 0.2s;
+  /* transition: transform 0.1s, opacity 0.2s; */
+  transition: 0.2s ease-in-out;
 }
 
-.tracker-form__submit:hover { opacity: 0.85; }
+.tracker-form__submit:hover {
+  /* opacity: 0.85; */
+  background-color: var(--text-dark);
+  color: var(--accent-light);
+  transition: 0.3s ease-in-out;
+}
+
 .tracker-form__submit:active { transform: scale(0.98); }
 
 /* =========================================================
@@ -399,6 +408,7 @@ body {
 .tracker-transaction-item__btn:hover {
   background: var(--border-light);
   color: var(--text-dark);
+  transform: scale(1.10);
 }
 
 .btn-delete {
