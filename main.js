@@ -200,10 +200,19 @@ const setTransactionsDisplay = (trxTypeElementId, transactions) => {
     trxItemContainer.classList.add('tracker-transaction-item')
 
     // expense/income icon
-    const trxTypeIcon = document.createElement("p");
+    const trxTypeIcon = document.createElement("div");
     trxTypeIcon.classList.add('tracker-transaction-item__icon');
     trxTypeIcon.classList.add(`tracker-transaction-item__icon--${trxTypeElementId === incomeList ? 'income' : 'expense'}`);
-    trxTypeIcon.innerText = trx.type === TrxType.INCOME ? '+' : '-';
+    const signIcon = document.createElement('p');
+    signIcon.innerText = trx.type === TrxType.INCOME ? '+' : '-';
+
+    const moneyIcon = document.createElement('img');
+    moneyIcon.src = './images/money-icon.png';
+    moneyIcon.width = 24;
+
+    trxTypeIcon.appendChild(signIcon);
+    trxTypeIcon.appendChild(moneyIcon);
+
     trxItemContainer.appendChild(trxTypeIcon);
 
     // detail wrapper (title and date)
@@ -251,6 +260,7 @@ const setTransactionsDisplay = (trxTypeElementId, transactions) => {
 
     const switchTypeButton = document.createElement('button');
     switchTypeButton.classList.add('tracker-transaction-item__btn');
+    switchTypeButton.classList.add('btn-switch-type');
     switchTypeButton.setAttribute('data-testid', 'transactionItemEditTypeButton');
     switchTypeButton.innerText = 'Ubah Tipe';
     switchTypeButton.addEventListener('click', () => {
@@ -260,6 +270,7 @@ const setTransactionsDisplay = (trxTypeElementId, transactions) => {
 
     const editButton = document.createElement('button');
     editButton.classList.add('tracker-transaction-item__btn');
+    editButton.classList.add('btn-edit');
     editButton.setAttribute('data-testid', 'transactionItemEditButton');
     editButton.innerText = 'Edit';
     editButton.addEventListener('click', () => {
@@ -270,8 +281,9 @@ const setTransactionsDisplay = (trxTypeElementId, transactions) => {
 
     const deleteButton = document.createElement('button');
     deleteButton.classList.add('tracker-transaction-item__btn');
+    deleteButton.classList.add('btn-delete');
     deleteButton.setAttribute('data-testid', 'transactionItemDeleteButton');
-    deleteButton.innerText = 'Delete';
+    deleteButton.innerText = 'Hapus';
     deleteButton.addEventListener('click', () => {
       deleteTransaction(trx.id);
     });
